@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NabulAir Monitor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .header { background: #2c3e50; color: white; padding: 1rem; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+        .card { background: white; border-radius: 8px; padding: 1rem; margin: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .stat-card { background: #3498db; color: white; padding: 1rem; border-radius: 6px; text-align: center; }
+        .device-list { display: grid; gap: 1rem; }
+        .device-card { border-left: 4px solid #2ecc71; padding: 1rem; }
+        .device-card.offline { border-left-color: #e74c3c; }
+        .login-form { max-width: 400px; margin: 2rem auto; }
+        .form-group { margin: 1rem 0; }
+        input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #3498db; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>🌿 NabulAir Monitor</h1>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div id="loginView" class="login-form card">
+            <h2>Accesso</h2>
+            <div class="form-group">
+                <input type="text" id="username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="Password" required>
+            </div>
+            <button onclick="login()">Accedi</button>
+        </div>
+
+        <div id="dashboardView" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Dispositivi Totali</h3>
+                    <p id="totalDevices">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Online</h3>
+                    <p id="onlineDevices">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Allerta Attive</h3>
+                    <p id="activeAlerts">0</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Dispositivi</h2>
+                <div id="deviceList" class="device-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let ws = null;
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = data.user;
+                    localStorage.setItem('token', data.token);
+                    showDashboard();
+                    connectWebSocket();
+                    loadDashboard();
+                } else {
+                    alert('Login fallito: ' + data.error);
+                }
+            } catch (error) {
+                alert('Errore di connessione');
+            }
+        }
+
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://${window.location.host}`);
+            
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    type: 'auth',
+                    token: localStorage.getItem('token')
+                }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'telemetry_update':
+                    updateDeviceStatus(data.deviceId, data.data);
+                    break;
+                case 'alert_created':
+                    showAlert(data.alert);
+                    break;
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/dashboard', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    updateDashboard(data.dashboard);
+                }
+            } catch (error) {
+                console.error('Errore caricamento dashboard:', error);
+            }
+        }
+
+        function updateDashboard(dashboard) {
+            document.getElementById('totalDevices').textContent = dashboard.totalDevices;
+            document.getElementById('onlineDevices').textContent = dashboard.deviceStatus.online || 0;
+            document.getElementById('activeAlerts').textContent = dashboard.alertSeverity.high || 0;
+        }
+
+        function showDashboard() {
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('dashboardView').style.display = 'block';
+        }
+
+        // Auto-login se token presente
+        const token = localStorage.getItem('token');
+        if (token) {
+            // Verifica token e mostra dashboard
+            showDashboard();
+            connectWebSocket();
+            loadDashboard();
+        }
+    </script>
+</body>
+</html>
