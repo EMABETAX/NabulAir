@@ -1,0 +1,25 @@
+{
+  "name": "nabulair-iot-manager",
+  "version": "1.0.0",
+  "description": "Sistema di Gestione Dispositivi IoT NabulAir",
+  "main": "server-auto-fix.js",
+  "scripts": {
+    "start": "node server-auto-fix.js",
+    "dev": "nodemon server-auto-fix.js",
+    "server": "node server.js"
+  },
+  "keywords": ["iot", "nabulair", "device-management", "mongodb"],
+  "author": "EMABETAX",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "socket.io": "^4.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
