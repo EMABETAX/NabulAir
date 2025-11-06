@@ -1,14 +1,13 @@
 {
-  "name": "nabulair-iot-manager",
+  "name": "nabulair-monitor",
   "version": "1.0.0",
-  "description": "Sistema di Gestione Dispositivi IoT NabulAir",
+  "description": "Sistema di Monitoraggio Dispositivi IoT NabulAir",
   "main": "server-auto-fix.js",
   "scripts": {
     "start": "node server-auto-fix.js",
-    "dev": "nodemon server-auto-fix.js",
-    "server": "node server.js"
+    "dev": "nodemon server-auto-fix.js"
   },
-  "keywords": ["iot", "nabulair", "device-management", "mongodb"],
+  "keywords": ["iot", "nabulair", "monitoring", "dashboard"],
   "author": "EMABETAX",
   "license": "MIT",
   "dependencies": {
